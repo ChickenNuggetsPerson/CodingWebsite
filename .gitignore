@@ -1,0 +1,5 @@
+sessions/*.json
+node_modules/
+data/*.json
+java/*.java
+java/*.class
