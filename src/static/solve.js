@@ -37,8 +37,6 @@ function processResults(result) {
     })
 }
 
-
-
 console.log(challenge)
 console.log(userID)
 
