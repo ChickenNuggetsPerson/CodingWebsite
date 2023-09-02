@@ -58,8 +58,9 @@ const port = 8080;
 
 app.set('view engine', 'pug');
 app.set('views', __dirname + '/views');
-app.use(bodyParser.urlencoded({ extended: true }));
+
 app.use(express.json());
+
 let fileStoreOptions = {};
 app.use(session({
     secret: 'cat videos',
@@ -80,6 +81,13 @@ app.get("/", async (req, res) => {
 app.get("/login", async (req, res) => {
     res.render("login")
 })
+app.get("/admin", async (req, res) => {
+    if (!req.session.isAdmin) {
+        res.redirect("/");
+        return;
+    }
+    res.render("")
+})
 
 
 function createUser(username, pass) {
@@ -94,6 +102,7 @@ app.post('/login', async (req, res) => {
     let users = JSON.parse(fs.readFileSync("./data/users.json"))
     let found = false;
     users.forEach(user => {
+        console.log(decrypt(user, req.body.password))
         if (decrypt(user, req.body.password) == req.body.username) {
             found = true;
         }   
@@ -113,7 +122,6 @@ app.post('/login', async (req, res) => {
 
 // Return Types:
 // void, boolean, int, double
-
 function getCurrentChallenge() {
     let id = JSON.parse(fs.readFileSync("./data/current.json"))
     return getChallengeFromID(id.current)
@@ -215,5 +223,9 @@ app.post('/execute', async (req, res) => {
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+    console.log(`Server is running on port ${port}`);
+    if (process.argv.length == 4) {
+        createUser(process.argv[2], process.argv[3])
+        console.log("Created User: " + process.argv[2])
+    }
 });
