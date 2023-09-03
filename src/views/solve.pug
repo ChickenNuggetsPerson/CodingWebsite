@@ -21,7 +21,7 @@ block layout-content
           span(class="input-group-text" id="functionEnd")
 
           br
-          button(id="execute-button") Execute Code
+          button(type="button" class="btn btn-success" id="execute-button") Execute Code
           br
           br
 
@@ -40,9 +40,24 @@ block layout-content
 
               div(class="col")
                 pre(id="result-display")
+
+          br
+          br
+
+          div(class="btn-group")
+            button(type="button" class="btn btn-primary dropdown-toggle dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false") Try Other Challenges
+              
+            ul(class="dropdown-menu" id="challengeDropdown")
+              li
+                a(class="dropdown-item" href="/") Current Challenge
+              li
+                hr(class="dropdown-divider")
+
+      button(type="button" class="btn" style="position:relative; bottom:-50; background-color:rgb(var(--bs-secondary-bg-rgb));" onclick='changePage("/admin/login")') Admin View
           
 
       script.
         var challenge = !{challenge};
         var userID = !{userID};
+        var otherChallenges = !{otherChallenges}
       script(src="/static/solve.js")

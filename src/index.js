@@ -71,22 +71,59 @@ app.use(session({
 }));
 app.use('/static', express.static('./src/static'))
 
+
 app.get("/", async (req, res) => {
     if (!req.session.uuid) {
         req.session.uuid = makeid(15);
     }
     req.session.challenge = getCurrentChallenge();
-    res.render('solve', {challenge: JSON.stringify(req.session.challenge), userID: JSON.stringify(req.session.uuid)});
+    res.render('solve', {
+        challenge: JSON.stringify(req.session.challenge), 
+        userID: JSON.stringify(req.session.uuid),
+        otherChallenges: JSON.stringify(getAllVisableChallenges())
+    });
 })
-app.get("/login", async (req, res) => {
+app.get("/challenge/:challengeID", async (req, res) => {
+    if (!req.session.uuid) {
+        req.session.uuid = makeid(15);
+    }
+    if (req.params.challengeID) {
+        req.session.challenge = getChallengeFromID(req.params.challengeID)
+    } else {
+        req.session.challenge = getCurrentChallenge();
+    }
+    res.render('solve', {
+        challenge: JSON.stringify(req.session.challenge), 
+        userID: JSON.stringify(req.session.uuid),
+        otherChallenges: JSON.stringify(getAllVisableChallenges())
+    });
+})
+
+app.get("/admin/login", async (req, res) => {
+    if (req.session.isAdmin) {
+        res.redirect("/admin/view")
+        return
+    }
     res.render("login")
 })
-app.get("/admin", async (req, res) => {
+app.get("/admin/view", async (req, res) => {
     if (!req.session.isAdmin) {
-        res.redirect("/");
+        res.redirect("/admin/login");
         return;
     }
-    res.render("")
+    res.redirect("/admin/view/" + getCurrentChallengeID())
+})
+app.get("/admin/view/:ID", async (req, res) => {
+    if (!req.session.isAdmin) {
+        res.redirect("/admin/login");
+        return;
+    }
+    res.render("admin", {
+        userID: JSON.stringify(req.session.uuid),
+        challenge: JSON.stringify(getChallengeFromID(req.params.ID)),
+        currentChallengeID: JSON.stringify(getCurrentChallengeID()),
+        allChallenges: JSON.stringify(getAllChallenges())
+    })
 })
 
 
@@ -102,7 +139,6 @@ app.post('/login', async (req, res) => {
     let users = JSON.parse(fs.readFileSync("./data/users.json"))
     let found = false;
     users.forEach(user => {
-        console.log(decrypt(user, req.body.password))
         if (decrypt(user, req.body.password) == req.body.username) {
             found = true;
         }   
@@ -114,19 +150,49 @@ app.post('/login', async (req, res) => {
         return;
     }
     req.session.isAdmin = true;
-    res.status(200);
-    res.send('Ok');
-
+    setTimeout(() => {
+        res.status(200);
+        res.send('Ok');
+    }, 200);
 });
+
+
+app.post("/setCurrent", async (req, res) => {
+    if (!req.session.isAdmin) { res.status(401); res.send('None shall pass'); return;}
+    setCurrentChallengeID(req.body.uuid)
+    res.status(200)
+    res.send("OK")
+})
+app.post("/save", async (req, res) => {
+    if (!req.session.isAdmin) { res.status(401); res.send('None shall pass'); return;}
+    saveChallenge(req.body.id, req.body)
+    res.status(200)
+    res.send("OK")
+})
+app.post("/deleteChallenge", async (req, res) => {
+    if (!req.session.isAdmin) { res.status(401); res.send('None shall pass'); return;}
+    deleteChallenge(req.body.uuid)
+    res.status(200)
+    res.send("OK")
+})
 
 
 // Return Types:
 // void, boolean, int, double
-function getCurrentChallenge() {
+
+function getCurrentChallengeID() {
     let id = JSON.parse(fs.readFileSync("./data/current.json"))
-    return getChallengeFromID(id.current)
+    return id.current
+}
+function setCurrentChallengeID(uuid) {
+    let id = JSON.parse(fs.readFileSync("./data/current.json"))
+    id.current = uuid
+    fs.writeFileSync("./data/current.json", JSON.stringify(id))
 }
 
+function getCurrentChallenge() {
+    return getChallengeFromID(getCurrentChallengeID())
+}
 function getChallengeFromID(uuid) {
     let challenges = JSON.parse(fs.readFileSync("./data/challenges.json"))
     let foundChallenge = null;
@@ -137,8 +203,58 @@ function getChallengeFromID(uuid) {
     })
     return foundChallenge;
 }
+function getAllVisableChallenges() {
+    let challenges = JSON.parse(fs.readFileSync("./data/challenges.json"))
+    let foundChallenges =[]
+    challenges.forEach((challenge) => {
+        if (challenge.public == true) {
+            foundChallenges.push({
+                title: challenge.title,
+                id: challenge.id
+            })
+        }
+    })
+    return foundChallenges;
+}
+function getAllChallenges() {
+    return JSON.parse(fs.readFileSync("./data/challenges.json"))
+}
+function saveChallenge(uuid, challenge) {
+    let chals = getAllChallenges()
+    let found = false;
+    for (let i = 0; i < chals.length; i++) {
+        if (chals[i].id == uuid) {
+            chals[i] = challenge;
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        chals.push(challenge)
+    }
+    fs.writeFileSync("./data/challenges.json", JSON.stringify(chals))
+}
+function deleteChallenge(uuid) {
+    let chals = getAllChallenges()
+    let found = false;
+    for (let i = 0; i < chals.length; i++) {
+        if (chals[i].id == uuid) {
+            chals.splice(i, 1);
+            found = true;
+            break;
+        }
+    }
+    if (found) {
+        fs.writeFileSync("./data/challenges.json", JSON.stringify(chals))
+        if (uuid == getCurrentChallengeID()) {
+            setCurrentChallengeID(chals[0].id)
+        }
+    }
+    return found;
+}
 
 
+// Java Execution Functions
 function genConsoleLog(inside) {
     return `System.out.println(${inside});`
 }
@@ -170,7 +286,7 @@ function generateFullCode(innerCode, userID, challengeID) {
             testsString += genConsoleLog(`"- ${testNum} " + ${challenge.name}(${args})`);
         }
         if (challenge.returnType == "void") {
-            testsString += `"- ${testNum} " + ${challenge.name}(${args});`;
+            testsString += `${challenge.name}(${args});`;
         }
         testNum++;
     })
@@ -191,8 +307,9 @@ function generateFullCode(innerCode, userID, challengeID) {
 }
 async function executeJava(javaCode, userID, challengeID) {
     return new Promise((resolve) => {
-
-        fs.writeFileSync("./java/" + userID + ".java", generateFullCode(javaCode, userID, challengeID))
+        let fullCode = generateFullCode(javaCode, userID, challengeID);
+        console.log("Running: ", fullCode)
+        fs.writeFileSync("./java/" + userID + ".java", fullCode)
 
         let process = child_process.exec("cd java/ && javac " + userID + ".java && java " + userID);
 
@@ -212,13 +329,10 @@ async function executeJava(javaCode, userID, challengeID) {
     }) 
 }
 app.post('/execute', async (req, res) => {
-    console.log("Running ", req.body)
-
     const { javaCode } = req.body;
     const result = await executeJava(javaCode, req.session.uuid, req.session.challenge.id);
     console.log(result)
     res.send(result);
-    
 });
 
 // Start the server

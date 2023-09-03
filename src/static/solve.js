@@ -39,6 +39,7 @@ function processResults(result) {
 
 console.log(challenge)
 console.log(userID)
+console.log(otherChallenges)
 
 document.getElementById("challengeTitle").innerText = "Daily Challenge: " + challenge.title;
 document.getElementById("challengeDesc").innerText = challenge.description
@@ -81,6 +82,18 @@ challenge.tests.forEach(test => {
     count++;
 });
 
+let dropdown = document.getElementById("challengeDropdown")
+otherChallenges.forEach(otherChallenge => {
+    let li = document.createElement("li")
+    let a = document.createElement("a")
+    a.classList.add("dropdown-item")
+    a.href = "/challenge/" + otherChallenge.id
+    a.innerText = otherChallenge.title
+
+    li.appendChild(a)
+    dropdown.appendChild(li)
+
+})
 
 
 document.getElementById('code-input').addEventListener('keydown', function(e) {

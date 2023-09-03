@@ -55,7 +55,7 @@ block layout-content
           if (response.status == 401) {
             document.getElementById('message').innerText = "Incorrect Login Information"
           } else {
-            changePage("/admin");
+            changePage("/admin/view");
           }
 
       } catch (error) {

@@ -66,3 +66,10 @@
     margin-right: auto;
     width: 50%;
   }
+
+
+
+.formBackground input {
+  color: var(--bs-body-color);
+  background-color: var(--bs-body-bg);
+}
