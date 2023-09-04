@@ -53,6 +53,21 @@ function decrypt(encryptedText, password) {
 
 
 
+let challengeList = []
+let currentChallenge = { current: "asdf" }
+function loadFiles() {
+    console.log("Reading JSON Files")
+    currentChallenge = JSON.parse(fs.readFileSync("./data/current.json"))
+    challengeList = JSON.parse(fs.readFileSync("./data/challenges.json"))
+}
+function writeFiles() {
+    console.log("Writing JSON Files")
+    fs.writeFileSync("./data/current.json", JSON.stringify(currentChallenge))
+    fs.writeFileSync("./data/challenges.json", JSON.stringify(challengeList))
+}
+
+
+
 const app = express();
 const port = 8080;
 
@@ -180,21 +195,19 @@ app.post("/deleteChallenge", async (req, res) => {
 // Return Types:
 // void, boolean, int, double
 
-function getCurrentChallengeID() {
-    let id = JSON.parse(fs.readFileSync("./data/current.json"))
-    return id.current
+function getCurrentChallengeID() {    
+    return currentChallenge.current
 }
 function setCurrentChallengeID(uuid) {
-    let id = JSON.parse(fs.readFileSync("./data/current.json"))
-    id.current = uuid
-    fs.writeFileSync("./data/current.json", JSON.stringify(id))
+    currentChallenge.current = uuid
+    writeFiles()
 }
 
 function getCurrentChallenge() {
     return getChallengeFromID(getCurrentChallengeID())
 }
 function getChallengeFromID(uuid) {
-    let challenges = JSON.parse(fs.readFileSync("./data/challenges.json"))
+    let challenges = challengeList
     let foundChallenge = null;
     challenges.forEach((challenge) => {
         if (challenge.id == uuid) {
@@ -204,7 +217,7 @@ function getChallengeFromID(uuid) {
     return foundChallenge;
 }
 function getAllVisableChallenges() {
-    let challenges = JSON.parse(fs.readFileSync("./data/challenges.json"))
+    let challenges = challengeList
     let foundChallenges =[]
     challenges.forEach((challenge) => {
         if (challenge.public == true) {
@@ -217,7 +230,7 @@ function getAllVisableChallenges() {
     return foundChallenges;
 }
 function getAllChallenges() {
-    return JSON.parse(fs.readFileSync("./data/challenges.json"))
+    return challengeList
 }
 function saveChallenge(uuid, challenge) {
     let chals = getAllChallenges()
@@ -232,7 +245,8 @@ function saveChallenge(uuid, challenge) {
     if (!found) {
         chals.push(challenge)
     }
-    fs.writeFileSync("./data/challenges.json", JSON.stringify(chals))
+    challengeList = chals;
+    writeFiles()
 }
 function deleteChallenge(uuid) {
     let chals = getAllChallenges()
@@ -245,7 +259,8 @@ function deleteChallenge(uuid) {
         }
     }
     if (found) {
-        fs.writeFileSync("./data/challenges.json", JSON.stringify(chals))
+        challengeList = chals;
+        writeFiles()
         if (uuid == getCurrentChallengeID()) {
             setCurrentChallengeID(chals[0].id)
         }
@@ -308,6 +323,7 @@ function generateFullCode(innerCode, userID, challengeID) {
 async function executeJava(javaCode, userID, challengeID) {
     return new Promise((resolve) => {
         let fullCode = generateFullCode(javaCode, userID, challengeID);
+        console.log(" ")
         console.log("Running: ", fullCode)
         fs.writeFileSync("./java/" + userID + ".java", fullCode)
 
@@ -342,4 +358,6 @@ app.listen(port, () => {
         createUser(process.argv[2], process.argv[3])
         console.log("Created User: " + process.argv[2])
     }
+
+    loadFiles()
 });
