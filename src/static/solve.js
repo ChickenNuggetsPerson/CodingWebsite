@@ -26,7 +26,8 @@ function processResults(result) {
         if (args[0] == "-") {
             document.getElementById(`row${index}`).classList.remove("goodRedult")
             document.getElementById(`row${index}`).classList.remove("badResult")
-            if ((challenge.tests[index].returns == args[2])) {
+
+            if (challenge.tests[index].returns == args[2] || challenge.tests[index].returns == `"${args[2]}"`) {
                 document.getElementById(`row${index}`).classList.add("goodRedult")
             } else {
                 document.getElementById(`row${index}`).classList.add("badResult")

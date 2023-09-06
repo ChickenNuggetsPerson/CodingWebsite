@@ -54,6 +54,7 @@ function decrypt(encryptedText, password) {
 
 
 let challengeList = []
+let allChallenges = []
 let currentChallenge = { current: "asdf" }
 function loadFiles() {
     console.log("Reading JSON Files")
@@ -284,6 +285,8 @@ function generateFullCode(innerCode, userID, challengeID) {
         }
     }
 
+    console.log(argsString)
+
     let testsString = "";
     let testNum = 0;
     challenge.tests.forEach((test) => {
@@ -298,6 +301,9 @@ function generateFullCode(innerCode, userID, challengeID) {
             testsString += genConsoleLog(`"- ${testNum} " + (${challenge.name}(${args}) ? "true" : "false")`);
         }
         if (challenge.returnType == "double" || challenge.returnType == "int") {
+            testsString += genConsoleLog(`"- ${testNum} " + ${challenge.name}(${args})`);
+        }
+        if (challenge.returnType == "String") {
             testsString += genConsoleLog(`"- ${testNum} " + ${challenge.name}(${args})`);
         }
         if (challenge.returnType == "void") {
@@ -327,7 +333,7 @@ async function executeJava(javaCode, userID, challengeID) {
         console.log("Running: ", fullCode)
         fs.writeFileSync("./java/" + userID + ".java", fullCode)
 
-        let process = child_process.exec("cd java/ && javac " + userID + ".java && java " + userID);
+        let process = child_process.exec("cd java/ && javac -nowarn " + userID + ".java && java " + userID);
 
         let returnString = ""
 

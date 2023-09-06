@@ -10,3 +10,4 @@
 - [X] Add table for editing and adding tests
 - [ ] Add hidden and visable buttons for challenges
 - [ ] Make challenge list alphabetical 
+- [ ] Scrape Coding Bat for challenges
